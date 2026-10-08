@@ -1,4 +1,8 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head><body>
 <title>Cây Ý Tưởng</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Quicksand:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -12,7 +16,7 @@
   --wash1:rgba(255,92,147,.13); --wash2:rgba(124,77,255,.10); --wash3:rgba(18,184,166,.13);
   --blob1:rgba(255,120,170,.30); --blob2:rgba(140,100,255,.22); --blob3:rgba(40,200,180,.22); --blob4:rgba(255,190,90,.26);
   --canvas:#FFFDFE; --cv1:#FFF7FB; --cv2:#F1EEFF; --dot:#E2D2EE; --lines:#EBDDF4;
-  --radius:18px; --h1:24px;
+  --radius:18px; --h1:24px; --danger:#B42318;
   --font:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --display:'Quicksand','Be Vietnam Pro',system-ui,sans-serif;
   --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
@@ -24,7 +28,7 @@
     --t1:#FF7AB8; --t2:#B79BFF; --t3:#5FD3EE;
     --wash1:rgba(255,92,147,.15); --wash2:rgba(124,77,255,.18); --wash3:rgba(18,184,166,.13);
     --blob1:rgba(255,92,147,.16); --blob2:rgba(124,77,255,.28); --blob3:rgba(18,184,166,.16); --blob4:rgba(255,170,60,.10);
-    --canvas:#150F25; --cv1:#1D1233; --cv2:#0F2230; --dot:#33264F; --lines:#2F2349; color-scheme:dark;
+    --canvas:#150F25; --cv1:#1D1233; --cv2:#0F2230; --dot:#33264F; --lines:#2F2349; --danger:#FF8A8A; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
@@ -33,7 +37,7 @@
   --t1:#FF7AB8; --t2:#B79BFF; --t3:#5FD3EE;
   --wash1:rgba(255,92,147,.15); --wash2:rgba(124,77,255,.18); --wash3:rgba(18,184,166,.13);
   --blob1:rgba(255,92,147,.16); --blob2:rgba(124,77,255,.28); --blob3:rgba(18,184,166,.16); --blob4:rgba(255,170,60,.10);
-  --canvas:#150F25; --cv1:#1D1233; --cv2:#0F2230; --dot:#33264F; --lines:#2F2349; color-scheme:dark;
+  --canvas:#150F25; --cv1:#1D1233; --cv2:#0F2230; --dot:#33264F; --lines:#2F2349; --danger:#FF8A8A; color-scheme:dark;
 }
 /* Kiểu cơ bản: phẳng, một màu nhấn xanh ngọc */
 :root[data-skin="basic"]{
@@ -146,6 +150,27 @@ button{cursor:pointer}
 .tip{position:absolute;left:14px;bottom:14px;margin:0;color:var(--muted);font-size:12px;pointer-events:none;
   background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px 9px}
 
+/* Lưu bài */
+.savebar{display:flex;flex-direction:column;gap:4px;padding:8px 12px 8px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+.saverow{display:flex;align-items:center;gap:8px}
+.nameinp{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:10px;padding:7px 10px;font:500 13px/1.3 var(--font)}
+.nameinp::placeholder{color:var(--muted)}
+.primary.sm{padding:6px 14px;font-size:12.5px;white-space:nowrap}
+.libbtn{display:flex;align-items:center;gap:6px;white-space:nowrap;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:500;color:var(--ink)}
+.libbtn:hover{background:var(--panel2)}
+.libbtn b{font-weight:700;font-size:11.5px;min-width:18px;text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:0 6px}
+.savemeta{margin:0;font-size:11.5px;color:var(--muted)}
+.liblist{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:52vh;overflow:auto}
+.libitem{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.libitem.cur{border-color:var(--accent)}
+.li-main{flex:1;min-width:150px}
+.li-name{font-weight:600;overflow-wrap:anywhere}
+.li-meta{color:var(--muted);font-size:12px}
+.li-act{display:flex;flex-wrap:wrap;gap:4px}
+.libempty{color:var(--muted);padding:14px 4px;font-size:13px}
+.ghost.danger{color:var(--danger)}
+.ghost.danger:hover{border-color:var(--danger);color:var(--danger)}
+
 /* Hộp xuất ảnh */
 .modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(10,14,22,.6)}
 .sheet{width:min(780px,100%);max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);
@@ -185,6 +210,14 @@ button{cursor:pointer}
   .toast{animation:up .18s ease-out}
   @keyframes up{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
 }
+/* Nút đăng nhập Google & Avatar người dùng */
+.auth-box { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.btn-g-auth { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); border-radius: 11px; padding: 6px 12px; font-size: 12.5px; font-weight: 600; color: var(--ink); cursor: pointer; transition: background .15s; }
+.btn-g-auth:hover { background: var(--panel2); }
+.user-profile { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 4px; }
+.user-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.btn-logout { background: transparent; border: 0; color: var(--muted); font-size: 11.5px; cursor: pointer; text-decoration: underline; padding: 0 4px; }
+.btn-logout:hover { color: var(--danger); }
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -241,6 +274,7 @@ button{cursor:pointer}
         <button type="button" data-skinopt="color" aria-pressed="true">Nhiều màu</button>
       </div>
     </div>
+     <div class="auth-box" id="authBox"></div>
     <div class="tabs" role="group" aria-label="Chuyển khung">
       <button type="button" data-tab="edit" aria-pressed="false">Soạn</button>
       <button type="button" data-tab="map" aria-pressed="true">Sơ đồ</button>
@@ -256,6 +290,15 @@ button{cursor:pointer}
           <button type="button" class="ghost" id="btnClear">Xóa</button>
           <button type="button" class="ghost" id="btnCopyText">Sao chép</button>
         </div>
+      </div>
+      <div class="savebar">
+        <div class="saverow">
+          <label class="sr-only" for="bName" style="position:absolute;left:-9999px">Tên bài</label>
+          <input id="bName" class="nameinp" type="text" maxlength="80" autocomplete="off" placeholder="Đặt tên bài, ví dụ: Chương 2 - MIS">
+          <button type="button" class="primary sm" id="btnSave" title="Lưu bài (Ctrl+S)">Lưu</button>
+          <button type="button" class="libbtn" id="btnLib">Bài đã lưu <b id="libCount">…</b></button>
+        </div>
+        <p class="savemeta" id="saveMeta" aria-live="polite" hidden></p>
       </div>
       <textarea id="src" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="hint"></textarea>
       <p class="hint" id="hint">Dòng đầu là chủ đề chính. Nhấn <kbd>Tab</kbd> để tạo nhánh con, <kbd>Shift</kbd>+<kbd>Tab</kbd> để lùi ra. Dấu <kbd>-</kbd> hoặc <kbd>*</kbd> đầu dòng sẽ được bỏ qua. Nhấn <kbd>Esc</kbd> rồi <kbd>Tab</kbd> để rời ô soạn.</p>
@@ -330,6 +373,20 @@ button{cursor:pointer}
   </div>
 </div>
 
+<div class="modal" id="libModal" hidden role="dialog" aria-modal="true" aria-labelledby="lTitle">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="lTitle">Bài đã lưu</h2>
+      <button type="button" class="ghost" id="lClose">Đóng</button>
+    </div>
+    <p class="note" id="lSource"></p>
+    <ul class="liblist" id="libList"></ul>
+    <div class="sheet-foot">
+      <button type="button" class="ghost" id="lNew">Bài mới</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
 'use strict';
@@ -392,13 +449,17 @@ const collapsed = new Set();
 const view = {x:0, y:0, k:1};
 let W = 0, H = 0, dpr = 1, userMoved = false, hover = null, T = {};
 let expScale = 2;
+const nameInp = $('#bName');
+let cur = {id:null, name:''}, savedSig = null;
+let library = [], libLoaded = false, libSource = 'local', libCol = null;
+let renamingId = null, confirmId = null, confirmTimer = 0, draftTimer = 0;
 const fancy = () => skin === 'color';
 const decoOn = () => skin === 'color' && deco;
 
 function loadSaved(){ try{ return JSON.parse(localStorage.getItem(KEY) || 'null'); }catch(e){ return null; } }
 function save(){
   store[skin] = {pal:palIdx, bg:bgMode};
-  try{ localStorage.setItem(KEY, JSON.stringify({text:src.value, mode:mode, skin:skin, style:nodeStyle, deco:deco, store:store})); }catch(e){}
+  try{ localStorage.setItem(KEY, JSON.stringify({text:src.value, mode:mode, skin:skin, style:nodeStyle, deco:deco, store:store, name:nameInp.value, cur:cur})); }catch(e){}
 }
 
 /* ---------- màu ---------- */
@@ -976,6 +1037,7 @@ function rebuild(){
   $('#stat').textContent = root ? total + ' nút · ' + root.children.length + ' nhánh chính' : '';
   hover = null;
   draw();
+  refreshSaveState();
 }
 function resize(){
   const r = wrap.getBoundingClientRect();
@@ -1333,6 +1395,386 @@ $('#mDownload').onclick = () => {
   }, 'image/png');
 };
 
+/* ---------- bài đã lưu ---------- */
+const libModal = $('#libModal'), libList = $('#libList');
+const LIBKEY = 'cay-y-tuong-lib-v1';
+function newId(){ return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function loadLocalLib(){
+  try{
+    const a = JSON.parse(localStorage.getItem(LIBKEY) || '[]');
+    return Array.isArray(a) ? a.filter(x => x && typeof x.id === 'string' && typeof x.text === 'string') : [];
+  }catch(e){ return []; }
+}
+function persistLocalLib(){
+  try{ localStorage.setItem(LIBKEY, JSON.stringify(library)); return true; }catch(e){ return false; }
+}
+function fmtTime(ts){
+  if(!ts) return 'chưa rõ giờ';
+  try{ return new Date(ts).toLocaleString('vi-VN', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'}); }
+  catch(e){ return ''; }
+}
+function settingsNow(){ return {mode:mode, skin:skin, style:nodeStyle, deco:deco, pal:palIdx, bg:bgMode}; }
+const sigNow = () => JSON.stringify([src.value, nameInp.value.trim(), mode, skin, nodeStyle, deco, palIdx, bgMode]);
+const sigOf = e => JSON.stringify([e.text, e.name, e.mode, e.skin, e.style, e.deco, e.pal, e.bg]);
+function refreshSaveState(){
+  const meta = $('#saveMeta');
+  if(!cur.id || savedSig === null){ meta.hidden = true; meta.textContent = ''; return; }
+  meta.hidden = false;
+  meta.textContent = sigNow() === savedSig ? 'Đã lưu, không có thay đổi mới' : 'Có thay đổi chưa lưu';
+}
+function syncSavedSig(){
+  const e = cur.id ? library.find(x => x.id === cur.id) : null;
+  savedSig = e ? sigOf(e) : null;
+  refreshSaveState();
+}
+function applySettings(o){
+  if(['both', 'right', 'down'].includes(o.mode)) mode = o.mode;
+  if(o.style === 'pill' || o.style === 'line') nodeStyle = o.style;
+  if(typeof o.deco === 'boolean') deco = o.deco;
+  const s = SKINS.includes(o.skin) ? o.skin : skin;
+  store[skin] = {pal:palIdx, bg:bgMode};
+  if(Number.isInteger(o.pal) && PAL[s][o.pal]) store[s].pal = o.pal;
+  if(BG_OPTS[s].includes(o.bg)) store[s].bg = o.bg;
+  skin = s;
+  palIdx = store[s].pal;
+  bgMode = store[s].bg;
+  applySkin();
+}
+function renderLibCount(){ $('#libCount').textContent = libLoaded ? String(library.length) : '…'; }
+function setLibrary(arr){
+  library = arr.slice().sort((a, b) => (b.updated || 0) - (a.updated || 0));
+  libLoaded = true;
+  renderLibCount();
+  syncSavedSig();
+  if(!libModal.hidden) renderLib();
+}
+function libErr(e){
+  const c = e && e.code;
+  if(c === 'quota_exceeded') return 'Kho lưu đã đầy, hãy xóa bớt bài cũ rồi lưu lại';
+  if(c === 'local_failed') return 'Trình duyệt không cho lưu dữ liệu. Hãy sao chép dàn ý để giữ lại';
+  if(c === 'invalid_argument') return 'Tài khoản của bạn chưa có quyền lưu bài ở trang này';
+  return 'Không lưu được, hãy thử lại sau giây lát';
+}
+async function libWrite(id, entry){
+  const arr = library.filter(x => x.id !== id);
+  arr.push(Object.assign({id:id}, entry));
+  if(libSource === 'cloud'){
+    await libCol.doc(id).set(entry);
+  } else {
+    const prev = library;
+    library = arr;
+    if(!persistLocalLib()){ library = prev; throw {code:'local_failed'}; }
+  }
+  setLibrary(arr);
+}
+async function libRemove(id){
+  const arr = library.filter(x => x.id !== id);
+  if(libSource === 'cloud'){
+    await libCol.doc(id).delete();
+  } else {
+    const prev = library;
+    library = arr;
+    if(!persistLocalLib()){ library = prev; throw {code:'local_failed'}; }
+  }
+  if(cur.id === id) cur = {id:null, name:''};
+  setLibrary(arr);
+  save();
+}
+async function libRename(id, name){
+  const arr = library.map(x => x.id === id ? Object.assign({}, x, {name:name}) : x);
+  if(libSource === 'cloud'){
+    await libCol.doc(id).update({name:name});
+  } else {
+    const prev = library;
+    library = arr;
+    if(!persistLocalLib()){ library = prev; throw {code:'local_failed'}; }
+  }
+  if(cur.id === id){ cur = {id:id, name:name}; nameInp.value = name; save(); }
+  setLibrary(arr);
+}
+
+async function saveCurrent(){
+  if(!src.value.trim()){ toast('Dàn ý đang trống, hãy gõ nội dung trước khi lưu'); return; }
+  let name = nameInp.value.trim().slice(0, 80);
+  if(!name) name = (root ? root.text : 'Bài chưa đặt tên').slice(0, 80);
+  const now = Date.now();
+  const old = cur.id ? library.find(x => x.id === cur.id) : null;
+  const id = cur.id || newId();
+  const entry = Object.assign(settingsNow(), {name:name, text:src.value, created:old && old.created ? old.created : now, updated:now});
+  const prevCur = cur;
+  cur = {id:id, name:name};
+  nameInp.value = name;
+  try{
+    await libWrite(id, entry);
+    syncSavedSig();
+    save();
+    toast('Đã lưu «' + name + '»');
+  }catch(err){
+    cur = prevCur;
+    syncSavedSig();
+    toast(libErr(err));
+  }
+}
+function openEntry(e){
+  const prev = {text:src.value, name:nameInp.value, cur:Object.assign({}, cur), set:settingsNow()};
+  applySettings(e);
+  cur = {id:e.id, name:e.name};
+  nameInp.value = e.name || '';
+  userMoved = false;
+  setText(e.text);
+  syncSavedSig();
+  closeLib();
+  save();
+  toast('Đã mở «' + (e.name || 'bài') + '»', 'Hoàn tác', () => {
+    applySettings(prev.set);
+    cur = prev.cur;
+    nameInp.value = prev.name;
+    userMoved = false;
+    setText(prev.text);
+    syncSavedSig();
+    save();
+  });
+}
+async function duplicateEntry(e){
+  const now = Date.now();
+  const name = ((e.name || 'Bài') + ' (bản sao)').slice(0, 80);
+  const entry = {mode:e.mode || 'both', skin:e.skin || 'color', style:e.style || 'pill', deco:e.deco !== false,
+    pal:Number.isInteger(e.pal) ? e.pal : 0, bg:e.bg || 'plain', name:name, text:e.text, created:now, updated:now};
+  try{ await libWrite(newId(), entry); toast('Đã nhân bản thành «' + name + '»'); }
+  catch(err){ toast(libErr(err)); }
+}
+function startNew(){
+  const prev = {text:src.value, name:nameInp.value, cur:Object.assign({}, cur)};
+  cur = {id:null, name:''};
+  nameInp.value = '';
+  setText('');
+  syncSavedSig();
+  closeLib();
+  save();
+  toast('Đã mở bài trắng', 'Hoàn tác', () => {
+    cur = prev.cur;
+    nameInp.value = prev.name;
+    setText(prev.text);
+    syncSavedSig();
+    save();
+  });
+}
+async function commitRename(e, value){
+  const name = (value || '').trim().slice(0, 80) || e.name;
+  try{ await libRename(e.id, name); renamingId = null; renderLib(); }
+  catch(err){ toast(libErr(err)); }
+}
+async function askDelete(e){
+  if(confirmId !== e.id){
+    confirmId = e.id;
+    clearTimeout(confirmTimer);
+    confirmTimer = setTimeout(() => { confirmId = null; renderLib(); }, 4000);
+    renderLib();
+    return;
+  }
+  clearTimeout(confirmTimer);
+  confirmId = null;
+  try{ await libRemove(e.id); toast('Đã xóa «' + (e.name || 'bài') + '»'); }
+  catch(err){ toast(libErr(err)); renderLib(); }
+}
+function libItem(e){
+  const li = document.createElement('li');
+  li.className = 'libitem' + (e.id === cur.id ? ' cur' : '');
+  const main = document.createElement('div');
+  main.className = 'li-main';
+  let renameInp = null;
+  if(renamingId === e.id){
+    renameInp = document.createElement('input');
+    renameInp.type = 'text';
+    renameInp.className = 'nameinp';
+    renameInp.maxLength = 80;
+    renameInp.value = e.name || '';
+    renameInp.setAttribute('aria-label', 'Tên bài');
+    renameInp.onkeydown = ev => {
+      if(ev.isComposing || ev.keyCode === 229) return;
+      if(ev.key === 'Enter'){ ev.preventDefault(); commitRename(e, renameInp.value); }
+      else if(ev.key === 'Escape'){ ev.stopPropagation(); renamingId = null; renderLib(); }
+    };
+    main.appendChild(renameInp);
+    setTimeout(() => renameInp.focus(), 0);
+  } else {
+    const t = document.createElement('div');
+    t.className = 'li-name';
+    t.textContent = e.name || 'Bài chưa đặt tên';
+    main.appendChild(t);
+  }
+  const meta = document.createElement('div');
+  meta.className = 'li-meta';
+  const nodes = String(e.text).split('\n').filter(l => l.trim()).length;
+  meta.textContent = nodes + ' nút · ' + fmtTime(e.updated) + (e.id === cur.id ? ' · đang mở' : '');
+  main.appendChild(meta);
+  li.appendChild(main);
+  const act = document.createElement('div');
+  act.className = 'li-act';
+  const btn = (label, cls, fn) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = cls;
+    b.textContent = label;
+    b.setAttribute('aria-label', label + ' bài ' + (e.name || ''));
+    b.onclick = fn;
+    act.appendChild(b);
+  };
+  if(renameInp){
+    btn('Lưu tên', 'primary sm', () => commitRename(e, renameInp.value));
+    btn('Hủy', 'ghost', () => { renamingId = null; renderLib(); });
+  } else {
+    btn('Mở', 'primary sm', () => openEntry(e));
+    btn('Đổi tên', 'ghost', () => { renamingId = e.id; confirmId = null; renderLib(); });
+    btn('Nhân bản', 'ghost', () => duplicateEntry(e));
+    btn(confirmId === e.id ? 'Xóa thật?' : 'Xóa', 'ghost danger', () => askDelete(e));
+  }
+  li.appendChild(act);
+  return li;
+}
+function renderLib(){
+  libList.textContent = '';
+  $('#lSource').textContent = libSource === 'cloud'
+    ? 'Bài được lưu theo tài khoản của bạn, mở lại được trên máy khác.'
+    : 'Bài đang lưu trong trình duyệt này. Xóa dữ liệu trình duyệt sẽ mất bài, nên hãy giữ thêm một bản dàn ý bằng nút Sao chép.';
+  if(!libLoaded || !library.length){
+    const li = document.createElement('li');
+    li.className = 'libempty';
+    li.textContent = libLoaded ? 'Chưa có bài nào. Gõ dàn ý, đặt tên rồi bấm Lưu.' : 'Đang tải danh sách bài…';
+    libList.appendChild(li);
+    return;
+  }
+  for(const e of library) libList.appendChild(libItem(e));
+}
+function openLib(){
+  renamingId = null; confirmId = null;
+  renderLib();
+  libModal.hidden = false;
+  $('#lClose').focus();
+}
+function closeLib(){ libModal.hidden = true; $('#btnLib').focus(); }
+function saveSoon(){ clearTimeout(draftTimer); draftTimer = setTimeout(save, 300); }
+$('#btnSave').onclick = saveCurrent;
+$('#btnLib').onclick = openLib;
+$('#lClose').onclick = closeLib;
+$('#lNew').onclick = startNew;
+libModal.addEventListener('click', e => { if(e.target === libModal) closeLib(); });
+nameInp.addEventListener('input', () => { refreshSaveState(); saveSoon(); });
+nameInp.addEventListener('keydown', e => {
+  if(e.isComposing || e.keyCode === 229) return;
+  if(e.key === 'Enter'){ e.preventDefault(); saveCurrent(); }
+});
+document.addEventListener('keydown', e => {
+  if((e.ctrlKey || e.metaKey) && !e.altKey && String(e.key).toLowerCase() === 's'){ e.preventDefault(); saveCurrent(); }
+  else if(e.key === 'Escape' && !libModal.hidden){ closeLib(); }
+});
+/* ---------- CẤU HÌNH VÀ KẾT NỐI FIREBASE ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyCFYPreFXfZae_H1XomFSxF0xm1JunvmsU",
+  authDomain: "cay-y-tuong-39607.firebaseapp.com",
+  projectId: "cay-y-tuong-39607",
+  storageBucket: "cay-y-tuong-39607.firebasestorage.app",
+  messagingSenderId: "678690338431",
+  appId: "1:678690338431:web:c033d56ef3ac68bfef714a"
+};
+
+// Khởi tạo Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
+let unSubSnapshot = null;
+
+// Cập nhật giao diện nút đăng nhập / thông tin tài khoản
+function updateAuthUI(user) {
+  const box = \$('#authBox');
+  box.textContent = '';
+
+  if (user) {
+    const wrap = document.createElement('div');
+    wrap.className = 'user-profile';
+    wrap.innerHTML = `
+      <img class="user-avatar" src="${user.photoURL || ''}" alt="Avatar">
+      <span>${user.displayName || 'Tài khoản'}</span>
+      <button type="button" class="btn-logout" id="btnLogout">Thoát</button>
+    `;
+    box.appendChild(wrap);
+    \$('#btnLogout').onclick = () => {
+      auth.signOut().then(() => toast('Đã đăng xuất'));
+    };
+  } else {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-g-auth';
+    btn.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M23.7 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.6c-.3 1.5-1.2 2.8-2.6 3.7v3.1h4.2c2.4-2.2 3.7-5.5 3.7-9.1z"/>
+        <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-4.2-3.1c-1.1.7-2.5 1.2-3.8 1.2-2.9 0-5.4-2-6.3-4.7H1.4v3.2C3.4 21.6 7.4 24 12 24z"/>
+        <path fill="#FBBC05" d="M5.7 14.4c-.2-.7-.4-1.5-.4-2.4s.2-1.7.4-2.4V6.4H1.4C.5 8.2 0 10 0 12s.5 3.8 1.4 5.6l4.3-3.2z"/>
+        <path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C18 1.2 15.2 0 12 0 7.4 0 3.4 2.4 1.4 6.4l4.3 3.2c.9-2.7 3.4-4.8 6.3-4.8z"/>
+      </svg>
+      Đăng nhập Google
+    `;
+    btn.onclick = () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(err => {
+        toast('Lỗi đăng nhập: ' + err.message);
+      });
+    };
+    box.appendChild(btn);
+  }
+}
+
+// Khởi tạo thư viện bài lưu với Firebase Firestore
+function initLibrary() {
+  auth.onAuthStateChanged(async user => {
+    updateAuthUI(user);
+
+    if (unSubSnapshot) {
+      unSubSnapshot();
+      unSubSnapshot = null;
+    }
+
+    if (user) {
+      libSource = 'cloud';
+      libCol = db.collection('users').doc(user.uid).collection('mindmaps');
+
+      // Tự động chuyển bài từ máy lên tài khoản Google (chỉ chạy khi trên Cloud chưa có bài)
+      const localItems = loadLocalLib();
+      if (localItems.length > 0) {
+        const cloudSnap = await libCol.limit(1).get();
+        if (cloudSnap.empty) {
+          // Cloud đang trống -> Đẩy toàn bộ bài từ máy lên Google
+          const batch = db.batch();
+          localItems.forEach(item => {
+            const docRef = libCol.doc(item.id);
+            batch.set(docRef, item);
+          });
+          await batch.commit();
+          toast('Đã tự động chuyển ' + localItems.length + ' bài từ máy lên tài khoản Google');
+        }
+      }
+
+      // Lắng nghe dữ liệu thời gian thực từ Firebase
+      unSubSnapshot = libCol.onSnapshot(
+        snap => {
+          const arr = snap.docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
+          setLibrary(arr);
+        },
+        err => {
+          console.error(err);
+          toast('Không thể tải bài từ Firebase');
+        }
+      );
+    } else {
+      libSource = 'local';
+      libCol = null;
+      setLibrary(loadLocalLib());
+    }
+  });
+}
+
 /* ---------- tab trên điện thoại ---------- */
 const work = $('.work');
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
@@ -1363,6 +1805,9 @@ if(saved && typeof saved.text === 'string' && saved.text.trim()){
 palIdx = store[skin].pal;
 bgMode = store[skin].bg;
 applySkin();
+if(saved && typeof saved.name === 'string') nameInp.value = saved.name;
+if(saved && saved.cur && typeof saved.cur.id === 'string') cur = {id:saved.cur.id, name:String(saved.cur.name || '')};
+initLibrary();
 new ResizeObserver(resize).observe(wrap);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
 new MutationObserver(draw).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
