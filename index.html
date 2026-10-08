@@ -1688,7 +1688,7 @@ let unSubSnapshot = null;
 
 // Cập nhật giao diện nút đăng nhập / thông tin tài khoản
 function updateAuthUI(user) {
-  const box = \$('#authBox');
+  const box = $('#authBox');
   box.textContent = '';
 
   if (user) {
@@ -1700,7 +1700,7 @@ function updateAuthUI(user) {
       <button type="button" class="btn-logout" id="btnLogout">Thoát</button>
     `;
     box.appendChild(wrap);
-    \$('#btnLogout').onclick = () => {
+    $('#btnLogout').onclick = () => {
       auth.signOut().then(() => toast('Đã đăng xuất'));
     };
   } else {
