@@ -94,7 +94,14 @@ button{cursor:pointer}
 .skin{display:flex;align-items:center;gap:8px;margin-left:auto}
 .tabs{display:none}
 
-.work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:12px}
+.work{flex:1;min-height:0;display:flex;gap:0}
+#paneEdit{width:var(--pane-w, 360px);min-width:240px;max-width:calc(100% - 320px);flex:none}
+#paneMap{flex:1;min-width:0}
+
+/* Thanh kéo tùy chỉnh độ rộng */
+.splitter{width:12px;margin:0 2px;cursor:col-resize;display:flex;align-items:center;justify-content:center;position:relative;flex:none;user-select:none;-webkit-user-select:none;touch-action:none;z-index:5}
+.splitter::after{content:'';width:4px;height:42px;border-radius:99px;background:var(--line);transition:background .2s, height .2s, transform .2s}
+.splitter:hover::after, .splitter.dragging::after{background:var(--accent);height:58px;transform:scaleX(1.3)}
 .panel{min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--panel);
   border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
 .panel:focus-within{border-color:var(--accent)}
@@ -205,6 +212,8 @@ button{cursor:pointer}
   .tip{display:none}
   #btnExport{margin-left:0}
   #src{font-size:14px}
+   .splitter{display:none!important}
+  #paneEdit{width:100%!important;max-width:100%!important}
 }
 @media (prefers-reduced-motion:no-preference){
   .toast{animation:up .18s ease-out}
@@ -303,7 +312,7 @@ button{cursor:pointer}
       <textarea id="src" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="hint"></textarea>
       <p class="hint" id="hint">Dòng đầu là chủ đề chính. Nhấn <kbd>Tab</kbd> để tạo nhánh con, <kbd>Shift</kbd>+<kbd>Tab</kbd> để lùi ra. Dấu <kbd>-</kbd> hoặc <kbd>*</kbd> đầu dòng sẽ được bỏ qua. Nhấn <kbd>Esc</kbd> rồi <kbd>Tab</kbd> để rời ô soạn.</p>
     </section>
-
+   <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Kéo để chỉnh độ rộng"></div>
     <section class="panel" id="paneMap" aria-label="Sơ đồ">
       <div class="bar">
         <div class="grp"><span class="lbl">Bố cục</span>
@@ -1773,6 +1782,59 @@ function initLibrary() {
       setLibrary(loadLocalLib());
     }
   });
+}
+
+/* ---------- kéo chỉnh độ rộng dàn ý ---------- */
+const splitter = $('#splitter');
+const workEl = $('.work');
+const SPLIT_KEY = 'cay-y-tuong-pane-w';
+
+// Khôi phục kích thước người dùng đã kéo trước đó
+try {
+  const savedW = localStorage.getItem(SPLIT_KEY);
+  if (savedW && window.innerWidth > 760) {
+    workEl.style.setProperty('--pane-w', savedW + 'px');
+  }
+} catch (_) {}
+
+if (splitter) {
+  let isDragging = false;
+  let startX = 0;
+  let startW = 0;
+
+  splitter.addEventListener('pointerdown', e => {
+    if (window.innerWidth <= 760) return;
+    isDragging = true;
+    startX = e.clientX;
+    startW = $('#paneEdit').getBoundingClientRect().width;
+    splitter.classList.add('dragging');
+    splitter.setPointerCapture(e.pointerId);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  splitter.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const minW = 240;
+    const maxW = workEl.getBoundingClientRect().width - 320;
+    const newW = Math.max(minW, Math.min(maxW, startW + dx));
+    workEl.style.setProperty('--pane-w', newW + 'px');
+  });
+
+  const stopDrag = e => {
+    if (!isDragging) return;
+    isDragging = false;
+    splitter.classList.remove('dragging');
+    try { splitter.releasePointerCapture(e.pointerId); } catch (_) {}
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const curW = $('#paneEdit').getBoundingClientRect().width;
+    try { localStorage.setItem(SPLIT_KEY, Math.round(curW)); } catch (_) {}
+  };
+
+  splitter.addEventListener('pointerup', stopDrag);
+  splitter.addEventListener('pointercancel', stopDrag);
 }
 
 /* ---------- tab trên điện thoại ---------- */
