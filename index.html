@@ -227,6 +227,22 @@ button{cursor:pointer}
 .user-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
 .btn-logout { background: transparent; border: 0; color: var(--muted); font-size: 11.5px; cursor: pointer; text-decoration: underline; padding: 0 4px; }
 .btn-logout:hover { color: var(--danger); }
+
+/* --- bản nâng cấp: emoji, chia sẻ, chế độ chỉ xem --- */
+.emojipop{position:fixed;z-index:30;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:8px;width:292px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+.emojipop button{border:0;background:transparent;font-size:20px;line-height:1;border-radius:8px;padding:5px 0}
+.emojipop button:hover{background:var(--panel2)}
+.insbar{display:flex;gap:4px;padding:4px 12px;border-bottom:1px solid var(--line)}
+.insbar .ghost{padding:4px 9px}
+.xbtns{display:flex;flex-wrap:wrap;gap:6px}
+.xbtns button{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:6px 14px;font-size:12.5px;font-weight:600;color:var(--ink)}
+.xbtns button:hover{border-color:var(--accent)}
+.viewbanner{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:8px 14px;border-radius:12px;
+  background:var(--grad);color:var(--on-grad);font-size:13px}
+.viewbanner button{border:1px solid currentColor;background:transparent;color:inherit;border-radius:9px;padding:4px 12px;font-weight:600;font-size:12.5px}
+.viewonly #paneEdit,.viewonly #splitter,.viewonly .tabs,.viewonly #authBox,.viewonly #btnShare,.viewonly .skin{display:none!important}
+.viewonly #paneMap{display:flex!important}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -309,8 +325,13 @@ button{cursor:pointer}
         </div>
         <p class="savemeta" id="saveMeta" aria-live="polite" hidden></p>
       </div>
+      <div class="insbar" role="group" aria-label="Chèn nhanh">
+        <button type="button" class="ghost" id="btnEmoji" title="Chèn emoji tại con trỏ">😊 Emoji</button>
+        <button type="button" class="ghost" id="btnLink" title="Chèn link vào nút">🔗 Link</button>
+        <button type="button" class="ghost" id="btnImg" title="Chèn ảnh từ địa chỉ web">🖼️ Ảnh</button>
+      </div>
       <textarea id="src" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="hint"></textarea>
-      <p class="hint" id="hint">Dòng đầu là chủ đề chính. Nhấn <kbd>Tab</kbd> để tạo nhánh con, <kbd>Shift</kbd>+<kbd>Tab</kbd> để lùi ra. Dấu <kbd>-</kbd> hoặc <kbd>*</kbd> đầu dòng sẽ được bỏ qua. Nhấn <kbd>Esc</kbd> rồi <kbd>Tab</kbd> để rời ô soạn.</p>
+      <p class="hint" id="hint">Dòng đầu là chủ đề chính. Nhấn <kbd>Tab</kbd> để tạo nhánh con, <kbd>Shift</kbd>+<kbd>Tab</kbd> để lùi ra. Dấu <kbd>-</kbd> hoặc <kbd>*</kbd> đầu dòng sẽ được bỏ qua. Nhấn <kbd>Esc</kbd> rồi <kbd>Tab</kbd> để rời ô soạn. Chèn link: <kbd>[chữ](https://…)</kbd>, chèn ảnh: <kbd>![](https://…)</kbd>. Trên sơ đồ, kéo một nút thả vào nút khác để đổi nhánh.</p>
     </section>
    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Kéo để chỉnh độ rộng"></div>
     <section class="panel" id="paneMap" aria-label="Sơ đồ">
@@ -341,11 +362,12 @@ button{cursor:pointer}
         </div>
         <button type="button" class="chip" id="btnDeco" aria-pressed="true">Trang trí nhánh</button>
         <span class="stat" id="stat" aria-live="polite"></span>
-        <button type="button" class="primary" id="btnExport">Xuất PNG</button>
+        <button type="button" class="ghost" id="btnShare">Chia sẻ</button>
+        <button type="button" class="primary" id="btnExport">Xuất file</button>
       </div>
       <div class="canvaswrap" id="wrap">
         <canvas id="cv" role="img" aria-label="Sơ đồ tư duy được vẽ từ dàn ý"></canvas>
-        <p class="tip">Kéo để di chuyển · Cuộn để thu phóng · Bấm vào nút để thu gọn hoặc mở nhánh</p>
+        <p class="tip">Kéo nền để di chuyển · Kéo một nút để đổi vị trí · Cuộn để thu phóng · Bấm vào nút để thu gọn hoặc mở nhánh</p>
         <div class="zoom">
           <button type="button" id="zin" aria-label="Phóng to">+</button>
           <button type="button" id="zout" aria-label="Thu nhỏ">−</button>
@@ -359,7 +381,7 @@ button{cursor:pointer}
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
   <div class="sheet">
     <div class="sheet-head">
-      <h2 id="mTitle">Xuất ảnh PNG</h2>
+      <h2 id="mTitle">Xuất sơ đồ</h2>
       <button type="button" class="ghost" id="mClose">Đóng</button>
     </div>
     <div class="preview"><img id="mImg" alt="Ảnh PNG của sơ đồ tư duy"></div>
@@ -374,10 +396,36 @@ button{cursor:pointer}
       </div>
       <label class="chk"><input type="checkbox" id="mTrans"> Nền trong suốt</label>
     </div>
+    <div class="sheet-opts">
+      <div class="grp"><span class="lbl">File khác</span>
+        <div class="xbtns" id="mFormats">
+          <button type="button" data-fmt="pdf">PDF</button>
+          <button type="button" data-fmt="md">Markdown</button>
+          <button type="button" data-fmt="opml">OPML</button>
+          <button type="button" data-fmt="xmind">XMind</button>
+        </div>
+      </div>
+    </div>
     <p class="note" id="mHow">Nhấn chuột phải vào ảnh rồi chọn Lưu ảnh. Trên điện thoại, giữ ngón tay lên ảnh để lưu. Hoặc bấm Sao chép ảnh rồi dán vào Word, Zalo, Canva.</p>
     <div class="sheet-foot">
       <button type="button" class="primary" id="mDownload" hidden>Tải PNG</button>
       <button type="button" class="primary" id="mCopy">Sao chép ảnh</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="shModal" hidden role="dialog" aria-modal="true" aria-labelledby="shTitle">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="shTitle">Chia sẻ (chỉ xem)</h2>
+      <button type="button" class="ghost" id="shClose">Đóng</button>
+    </div>
+    <p class="note" id="shNote">Ai có link đều xem được bản sơ đồ này nhưng không sửa được.</p>
+    <input class="nameinp" id="shUrl" type="text" readonly aria-label="Link chia sẻ">
+    <div class="sheet-foot">
+      <button type="button" class="ghost danger" id="shStop">Dừng chia sẻ</button>
+      <button type="button" class="ghost" id="shUpdate">Cập nhật nội dung</button>
+      <button type="button" class="primary" id="shCopy">Sao chép link</button>
     </div>
   </div>
 </div>
@@ -430,7 +478,13 @@ const PAL = {
   basic:[
     {name:'Rực', c:['#C2410C','#0F766E','#2563EB','#E11D48','#15803D','#B45309','#7C3AED','#0E7490']},
     {name:'Dịu', c:['#B4533A','#3F7D6B','#4A6FA5','#A5546B','#657A2B','#946A12','#6B5B95','#2F7F94']},
-    {name:'Một tông', c:['#0B5563','#0F4C75','#1B6A7E','#1D5C8F','#14656B','#2E6F9E','#245F7A','#3A5F8A']}
+    {name:'Một tông', c:['#0B5563','#0F4C75','#1B6A7E','#1D5C8F','#14656B','#2E6F9E','#245F7A','#3A5F8A']},
+    {name:'Pastel', c:['#F4A6C0','#F9C784','#F3DC7A','#A8DCC0','#9ED7E8','#A9B8F2','#CDB4F0','#F2B3A8']},
+    {name:'Retro', c:['#C8553D','#F28F3B','#E3B23C','#7A9E7E','#2E6F73','#8E5572','#B5651D','#5B7DB1']},
+    {name:'Doanh nghiệp', c:['#1F3A5F','#2E5E8C','#3D7EA6','#2C7873','#5C6B7A','#7A8CA3','#8A6E3A','#4F9DA6']},
+    {name:'Mùa thu', c:['#B5472B','#D98324','#E5B143','#7C8F3A','#8A5A44','#C4673B','#5E6B3A','#A63D40']},
+    {name:'Neon', c:['#FF2E88','#FF9F1C','#E9FF3B','#2EFF8F','#22D3EE','#4D7CFF','#B26BFF','#FF5CF4']},
+    {name:'Xám than', c:['#374151','#4B5563','#6B7280','#52525B','#3F3F46','#57534E','#64748B','#475569']}
   ],
   color:[
     {name:'Cầu vồng', c:['#FF4D6D','#FF8A00','#F2B705','#2DBE60','#12B5CB','#3D7BFF','#8E5BFF','#E83FD0'], root:['#7C4DFF','#E0338F']},
@@ -438,7 +492,13 @@ const PAL = {
     {name:'Vườn xuân', c:['#E8508C','#4FB06A','#F2A93B','#2FA39B','#D96AA7','#86B63A','#E4725A','#6C8EE0'], root:['#2FA39B','#4FB06A']},
     {name:'Hoàng hôn', c:['#FF5E62','#FF9966','#FFC15E','#E8456B','#C2398B','#7F4FC9','#F27A54','#FFB26B'], root:['#C2398B','#FF5E62']},
     {name:'Biển', c:['#0EA5E9','#14B8A6','#22C55E','#3B82F6','#06B6D4','#6366F1','#10B981','#38BDF8'], root:['#0369A1','#0EA5A4']},
-    {name:'Nghiêm túc', c:['#0B5563','#0F4C75','#1B6A7E','#1D5C8F','#14656B','#2E6F9E','#245F7A','#3A5F8A'], root:['#0F2E4A','#0B5563']}
+    {name:'Nghiêm túc', c:['#0B5563','#0F4C75','#1B6A7E','#1D5C8F','#14656B','#2E6F9E','#245F7A','#3A5F8A'], root:['#0F2E4A','#0B5563']},
+    {name:'Pastel', c:['#F4A6C0','#F9C784','#F3DC7A','#A8DCC0','#9ED7E8','#A9B8F2','#CDB4F0','#F2B3A8'], root:['#B79CED','#F29BBF']},
+    {name:'Retro', c:['#C8553D','#F28F3B','#E3B23C','#7A9E7E','#2E6F73','#8E5572','#B5651D','#5B7DB1'], root:['#8C3B2E','#C8553D']},
+    {name:'Doanh nghiệp', c:['#1F3A5F','#2E5E8C','#3D7EA6','#2C7873','#5C6B7A','#7A8CA3','#8A6E3A','#4F9DA6'], root:['#0B1F3A','#1F3A5F']},
+    {name:'Mùa thu', c:['#B5472B','#D98324','#E5B143','#7C8F3A','#8A5A44','#C4673B','#5E6B3A','#A63D40'], root:['#7A2E1D','#B5472B']},
+    {name:'Neon', c:['#FF2E88','#FF9F1C','#E9FF3B','#2EFF8F','#22D3EE','#4D7CFF','#B26BFF','#FF5CF4'], root:['#5B2EFF','#FF2E88']},
+    {name:'Xám than', c:['#374151','#4B5563','#6B7280','#52525B','#3F3F46','#57534E','#64748B','#475569'], root:['#111827','#374151']}
   ]
 };
 const BG_OPTS = {basic:['dots', 'grid', 'plain'], color:['flora', 'grid', 'dots', 'plain']};
@@ -462,11 +522,15 @@ const nameInp = $('#bName');
 let cur = {id:null, name:''}, savedSig = null;
 let library = [], libLoaded = false, libSource = 'local', libCol = null;
 let renamingId = null, confirmId = null, confirmTimer = 0, draftTimer = 0;
+const viewId = (new URLSearchParams(location.search).get('v') || '').toLowerCase();
+const viewOnly = /^[a-z0-9]{6,20}$/.test(viewId);
+if(viewOnly) document.body.classList.add('viewonly');
 const fancy = () => skin === 'color';
 const decoOn = () => skin === 'color' && deco;
 
 function loadSaved(){ try{ return JSON.parse(localStorage.getItem(KEY) || 'null'); }catch(e){ return null; } }
 function save(){
+  if(viewOnly) return;
   store[skin] = {pal:palIdx, bg:bgMode};
   try{ localStorage.setItem(KEY, JSON.stringify({text:src.value, mode:mode, skin:skin, style:nodeStyle, deco:deco, store:store, name:nameInp.value, cur:cur})); }catch(e){}
 }
@@ -502,31 +566,56 @@ function mulberry(a){
 }
 
 /* ---------- phân tích dàn ý ---------- */
-function mk(text, depth, parent){
-  return {text:text, depth:depth, parent:parent, children:[], key:(parent ? parent.key + '›' : '') + text, branch:-1};
+const IMG_RE = /!\[[^\]]*\]\(\s*((?:https?:\/\/|data:image\/)[^)\s]+)\s*\)/i;
+const LINK_RE = /\[([^\]]*)\]\(\s*(https?:\/\/[^)\s]+)\s*\)/i;
+const URL_RE = /https?:\/\/[^\s)]+/i;
+function hostOf(u){ try{ return new URL(u).hostname.replace(/^www\./, ''); }catch(e){ return u; } }
+// Tách link và ảnh ra khỏi chữ của nút: [chữ](https://...) , https://... , ![](https://...)
+function inline(raw){
+  let t = raw, img = null, link = null;
+  t = t.replace(IMG_RE, (m, u) => { img = u; return ' '; });
+  t = t.replace(LINK_RE, (m, label, u) => { link = u; return label.trim() || hostOf(u); });
+  if(!link){
+    const m = t.match(URL_RE);
+    if(m){ link = m[0]; t = t.replace(m[0], hostOf(m[0])); }
+  }
+  t = t.replace(/\s+/g, ' ').trim();
+  if(!t && !img) t = raw;
+  return {label:t, link:link, img:img};
+}
+function mk(raw, depth, parent){
+  const x = inline(raw);
+  return {raw:raw, text:x.label, link:x.link, img:x.img, depth:depth, parent:parent, children:[],
+    key:(parent ? parent.key + '›' : '') + raw, branch:-1, li:0, ind:0, end:0};
 }
 function parse(text){
   const items = [];
-  for(const raw of text.split('\n')){
-    if(!raw.trim()) continue;
-    const m = raw.match(/^([ \t]*)(.*)$/);
+  text.split('\n').forEach((line, li) => {
+    if(!line.trim()) return;
+    const m = line.match(/^([ \t]*)(.*)$/);
     let indent = 0;
     for(const ch of m[1]) indent += (ch === '\t' ? 2 : 1);
     const t = m[2].replace(/^[-*•+]\s+/, '').trim();
-    if(t) items.push({indent:indent, t:t});
-  }
+    if(t) items.push({indent:indent, t:t, li:li});
+  });
   if(!items.length) return null;
   const r = mk(items[0].t, 0, null);
-  const stack = [{indent:items[0].indent, node:r}];
+  r.li = items[0].li; r.ind = items[0].indent;
+  const stack = [{indent:items[0].indent, node:r}], flat = [r];
   for(let i = 1; i < items.length; i++){
     const it = items[i];
     while(stack.length > 1 && stack[stack.length - 1].indent >= it.indent) stack.pop();
     const parent = stack[stack.length - 1].node;
     const n = mk(it.t, parent.depth + 1, parent);
+    n.li = it.li; n.ind = it.indent;
     n.branch = parent.depth === 0 ? parent.children.length : parent.branch;
     parent.children.push(n);
     stack.push({indent:it.indent, node:n});
+    flat.push(n);
   }
+  // n.li..n.end là các dòng của nút và toàn bộ nhánh con (dùng cho kéo thả)
+  const lastLi = n => n.children.length ? lastLi(n.children[n.children.length - 1]) : n.li;
+  for(const n of flat) n.end = lastLi(n) + 1;
   return r;
 }
 
@@ -572,9 +661,22 @@ function measure(n){
   const line = nodeStyle === 'line' && n.depth > 0;
   n.px = line ? 3 : f.px;
   n.py = line ? 5 : f.py;
-  n.w = Math.ceil(tw + n.px * 2);
-  n.h = n.lines.length * f.lh + n.py * 2;
+  n.lk = n.link ? 20 : 0;            // chỗ chừa cho biểu tượng link
+  n.iw = 0; n.ih = 0; n.ib = 0; n.imE = null;
+  if(n.img){
+    const e = getImg(n.img);
+    n.imE = e;
+    if(e.st === 'ok'){
+      const s = Math.min(140 / e.el.naturalWidth, 72 / e.el.naturalHeight, 1.5);
+      n.iw = Math.max(16, Math.round(e.el.naturalWidth * s));
+      n.ih = Math.max(16, Math.round(e.el.naturalHeight * s));
+    } else { n.iw = 44; n.ih = 44; }
+    n.ib = n.ih + (n.lines.length ? 6 : 0);
+  }
+  n.w = Math.ceil(Math.max(tw + n.lk, n.iw) + n.px * 2);
+  n.h = n.lines.length * f.lh + n.py * 2 + n.ib;
   n.bd = null;
+  n.lkr = null;
 }
 function visit(n){
   n.collapsed = n.children.length > 0 && collapsed.has(n.key);
@@ -934,6 +1036,48 @@ function stickers(c, n, col){
   }
   if(n.depth >= 1 && !kids(n).length && !n.collapsed) tipFlower(c, n, col);
 }
+/* ---------- ảnh và link trên nút ---------- */
+const imgCache = new Map();
+let rbTimer = 0;
+function getImg(url){
+  let e = imgCache.get(url);
+  if(!e){
+    e = {st:'load', el:new Image()};
+    e.el.crossOrigin = 'anonymous';           // để xuất PNG không bị chặn
+    const done = st => { e.st = st; clearTimeout(rbTimer); rbTimer = setTimeout(rebuild, 30); };
+    e.el.onload = () => done('ok');
+    e.el.onerror = () => done('err');
+    e.el.src = url;
+    imgCache.set(url, e);
+  }
+  return e;
+}
+function drawImg(c, n, cx){
+  const x = cx - n.iw / 2, y = n.y + n.py, e = n.imE;
+  c.save();
+  rr(c, x, y, n.iw, n.ih, 8);
+  c.clip();
+  if(e.st === 'ok'){ c.drawImage(e.el, x, y, n.iw, n.ih); }
+  else {
+    c.fillStyle = 'rgba(128,128,128,.2)';
+    c.fillRect(x, y, n.iw, n.ih);
+    c.font = '22px ' + FAM; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = T.muted;
+    c.fillText(e.st === 'err' ? '🖼️' : '…', cx, y + n.ih / 2);
+  }
+  c.restore();
+}
+function drawLinkIcon(c, n, col){
+  const x = n.x + n.w - n.px - 10;
+  const y = n.lines.length ? n.y + n.py + n.ib + n.lines.length * n.f.lh / 2 : n.y + n.h / 2;
+  c.save();
+  c.globalAlpha *= 0.22; c.fillStyle = col;
+  c.beginPath(); c.arc(x, y, 9, 0, Math.PI * 2); c.fill();
+  c.restore();
+  c.fillStyle = col; c.font = '700 12px ' + FAM; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('↗', x, y + 0.5);
+  n.lkr = {x:x - 11, y:y - 11, w:22, h:22};
+}
 function drawNode(c, n, hov){
   const f = n.f, col = colorOf(n), P = PALETTES[palIdx], top = n.depth === 0, fx = fancy();
   const pill = top || nodeStyle === 'pill';
@@ -968,7 +1112,7 @@ function drawNode(c, n, hov){
       } else {
         rr(c, n.x, n.y, n.w, n.h, rad);
         c.fillStyle = col; c.fill();
-        textCol = '#fff';
+        textCol = textOnL(lum(col));
       }
     } else {
       rr(c, n.x, n.y, n.w, n.h, rad);
@@ -999,21 +1143,26 @@ function drawNode(c, n, hov){
     c.strokeStyle = col + '99';
     c.stroke();
   }
+  const tcx = n.x + (n.w - n.lk) / 2;
+  if(n.img) drawImg(c, n, tcx);
   c.font = f.font;
   c.textAlign = 'center';
   c.textBaseline = 'middle';
   c.fillStyle = textCol;
   for(let i = 0; i < n.lines.length; i++){
-    c.fillText(n.lines[i], n.x + n.w / 2, n.y + n.py + f.lh * (i + 0.5) + 0.5);
+    c.fillText(n.lines[i], tcx, n.y + n.py + n.ib + f.lh * (i + 0.5) + 0.5);
   }
+  if(n.link) drawLinkIcon(c, n, textCol);
   if(decoOn()) stickers(c, n, col);
   if(n.collapsed) badge(c, n, col);
 }
 function render(c, hov){
   c.lineCap = 'round';
   c.lineJoin = 'round';
-  for(const n of all) if(n.parent) link(c, n.parent, n);
-  for(const n of all) drawNode(c, n, n === hov);
+  const dim = n => { c.globalAlpha = (drag && drag.set.has(n)) ? 0.25 : 1; };   // nhánh đang kéo mờ đi
+  for(const n of all) if(n.parent){ dim(n); link(c, n.parent, n); }
+  for(const n of all){ dim(n); drawNode(c, n, n === hov); }
+  c.globalAlpha = 1;
 }
 function draw(){
   if(!W) return;
@@ -1030,6 +1179,7 @@ function draw(){
   }
   ctx.setTransform(dpr * view.k, 0, 0, dpr * view.k, dpr * view.x, dpr * view.y);
   render(ctx, hover);
+  if(drag) drawDrag(ctx);
 }
 
 function rebuild(){
@@ -1061,7 +1211,7 @@ function resize(){
 
 /* ---------- thao tác trên sơ đồ ---------- */
 const ptrs = new Map();
-let pan = null, moved = 0, lastPinch = null;
+let pan = null, moved = 0, lastPinch = null, dragC = null, drag = null;
 const pos = e => { const r = cv.getBoundingClientRect(); return {x:e.clientX - r.left, y:e.clientY - r.top}; };
 function hit(px, py){
   const x = (px - view.x) / view.k, y = (py - view.y) / view.k;
@@ -1088,12 +1238,95 @@ function toggle(n){
   if(collapsed.has(n.key)) collapsed.delete(n.key); else collapsed.add(n.key);
   rebuild();
 }
+function hitLink(px, py){
+  const x = (px - view.x) / view.k, y = (py - view.y) / view.k;
+  for(const n of all){
+    const b = n.lkr;
+    if(b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return n;
+  }
+  return null;
+}
+
+/* ---------- kéo thả nút để đổi cha - con ---------- */
+function startDrag(n, p){
+  drag = {n:n, set:new Set(), px:p.x, py:p.y, tg:null, zone:null};
+  (function add(m){ drag.set.add(m); for(const c of m.children) add(c); })(n);
+  draw();
+}
+// Thả lên giữa nút = thành con; thả lên mép trên/dưới (hoặc trái/phải khi bố cục "Xuống dưới") = thành anh em
+function dropAt(px, py){
+  const x = (px - view.x) / view.k, y = (py - view.y) / view.k;
+  for(let i = all.length - 1; i >= 0; i--){
+    const t = all[i];
+    if(drag.set.has(t)) continue;
+    if(x < t.x - 6 || x > t.x + t.w + 6 || y < t.y - 6 || y > t.y + t.h + 6) continue;
+    if(!t.parent) return {n:t, zone:'in'};
+    const r = mode === 'down' ? (x - t.x) / t.w : (y - t.y) / t.h;
+    return {n:t, zone:r < 0.28 ? 'before' : (r > 0.72 ? 'after' : 'in')};
+  }
+  return null;
+}
+function dropNode(n, t, zone){
+  const prev = src.value, lines = prev.split('\n');
+  const a = n.li, b = n.end;
+  const ind = zone === 'in' ? (t.children.length ? t.children[0].ind : t.ind + 2) : t.ind;
+  const at = zone === 'before' ? t.li : t.end;
+  const delta = ind - n.ind;
+  const block = lines.slice(a, b).map(l => {
+    if(!l.trim()) return l;
+    const m = l.match(/^[ \t]*/)[0];
+    let w = 0;
+    for(const ch of m) w += (ch === '\t' ? 2 : 1);
+    return ' '.repeat(Math.max(0, w + delta)) + l.slice(m.length);
+  });
+  lines.splice(a, b - a);
+  lines.splice(at > a ? at - (b - a) : at, 0, ...block);
+  const next = lines.join('\n');
+  if(next === prev){ draw(); return; }
+  if(zone === 'in') collapsed.delete(t.key);
+  setText(next);
+  toast('Đã chuyển «' + (n.text || 'nút') + '»', 'Hoàn tác', () => setText(prev));
+}
+function drawDrag(c){
+  const d = drag, t = d.tg;
+  if(t){
+    const acc = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#7C4DFF';
+    c.save();
+    c.strokeStyle = acc; c.fillStyle = acc; c.lineWidth = 3; c.lineCap = 'round';
+    if(d.zone === 'in'){
+      rr(c, t.x - 6, t.y - 6, t.w + 12, t.h + 12, 14);
+      c.globalAlpha = 0.14; c.fill(); c.globalAlpha = 1;
+      c.setLineDash([7, 5]); c.stroke();
+    } else {
+      c.beginPath();
+      if(mode === 'down'){
+        const x = d.zone === 'before' ? t.x - 9 : t.x + t.w + 9;
+        c.moveTo(x, t.y - 4); c.lineTo(x, t.y + t.h + 4);
+      } else {
+        const y = d.zone === 'before' ? t.y - 8 : t.y + t.h + 8;
+        c.moveTo(t.x - 4, y); c.lineTo(t.x + t.w + 4, y);
+      }
+      c.lineWidth = 4; c.stroke();
+    }
+    c.restore();
+  }
+  const n = d.n, ox = n.x, oy = n.y;      // vẽ "bóng" của nút đang kéo theo con trỏ
+  n.x = (d.px - view.x) / view.k - n.w / 2;
+  n.y = (d.py - view.y) / view.k - n.h / 2;
+  c.save(); c.globalAlpha = 0.92; drawNode(c, n, false); c.restore();
+  n.x = ox; n.y = oy;
+}
+
 cv.addEventListener('pointerdown', e => {
   cv.setPointerCapture(e.pointerId);
   const p = pos(e);
   ptrs.set(e.pointerId, p);
-  if(ptrs.size === 1){ pan = {x:p.x, y:p.y, vx:view.x, vy:view.y}; moved = 0; }
-  else { pan = null; lastPinch = pinchInfo(); }
+  if(ptrs.size === 1){
+    pan = {x:p.x, y:p.y, vx:view.x, vy:view.y}; moved = 0;
+    const h = hit(p.x, p.y);
+    // chuột/bút: kéo là nhấc nút; cảm ứng: giữ ~0,3 giây rồi mới kéo (kéo ngay vẫn là di chuyển nền)
+    dragC = (!viewOnly && h && h.parent && !hitLink(p.x, p.y)) ? {n:h, x:p.x, y:p.y, t0:performance.now(), touch:e.pointerType === 'touch'} : null;
+  } else { pan = null; dragC = null; lastPinch = pinchInfo(); }
 });
 cv.addEventListener('pointermove', e => {
   const p = pos(e);
@@ -1101,11 +1334,23 @@ cv.addEventListener('pointermove', e => {
     if(e.pointerType === 'mouse'){
       const h = hit(p.x, p.y);
       if(h !== hover){ hover = h; draw(); }
-      cv.style.cursor = h && h.children.length ? 'pointer' : 'grab';
+      cv.style.cursor = (hitLink(p.x, p.y) || (h && h.children.length)) ? 'pointer' : 'grab';
     }
     return;
   }
   ptrs.set(e.pointerId, p);
+  if(drag){
+    drag.px = p.x; drag.py = p.y;
+    const d = dropAt(p.x, p.y);
+    drag.tg = d ? d.n : null; drag.zone = d ? d.zone : null;
+    cv.style.cursor = 'grabbing';
+    draw();
+    return;
+  }
+  if(ptrs.size === 1 && dragC && Math.hypot(p.x - dragC.x, p.y - dragC.y) > 6){
+    if(dragC.touch && performance.now() - dragC.t0 < 300){ dragC = null; }
+    else { const n = dragC.n; dragC = null; pan = null; startDrag(n, p); return; }
+  }
   if(ptrs.size === 1 && pan){
     const dx = p.x - pan.x, dy = p.y - pan.y;
     moved = Math.max(moved, Math.hypot(dx, dy));
@@ -1132,10 +1377,19 @@ function endPtr(e){
   if(!ptrs.has(e.pointerId)) return;
   const p = pos(e);
   ptrs.delete(e.pointerId);
+  if(drag){
+    const d = drag;
+    drag = null; dragC = null; pan = null;
+    cv.style.cursor = 'grab';
+    if(e.type === 'pointerup' && d.tg) dropNode(d.n, d.tg, d.zone); else draw();
+    return;
+  }
+  dragC = null;
   if(ptrs.size === 0){
     if(pan && moved <= 4 && e.type === 'pointerup'){
-      const h = hit(p.x, p.y);
-      if(h && h.children.length) toggle(h);
+      const lk = hitLink(p.x, p.y);
+      if(lk){ window.open(lk.link, '_blank', 'noopener,noreferrer'); }
+      else { const h = hit(p.x, p.y); if(h && h.children.length) toggle(h); }
     }
     pan = null; lastPinch = null;
     cv.style.cursor = 'grab';
@@ -1281,6 +1535,43 @@ $('#btnCopyText').onclick = async () => {
   catch(e){ src.focus(); src.select(); const ok = document.execCommand('copy'); toast(ok ? 'Đã sao chép dàn ý' : 'Không sao chép được, hãy chọn và sao chép thủ công'); }
 };
 
+/* ---------- chèn emoji, link, ảnh ---------- */
+const EMOJIS = ['💡','⭐','✅','❗','❓','📌','📚','📝','🎯','🔥','🚀','💰','📈','📉','🧠','👥','🏆','⚙️','🔒','🌱','🌸','🍀','☀️','🌙','❤️','😊','🤔','🎉','📅','⏰','💻','📱','🔗','🖼️','📊','🧩','🛠️','🔍','⚠️','🏫'];
+let emojiPop = null;
+function closeEmoji(){ if(emojiPop){ emojiPop.remove(); emojiPop = null; } }
+$('#btnEmoji').onclick = e => {
+  if(emojiPop){ closeEmoji(); return; }
+  const r = e.currentTarget.getBoundingClientRect();
+  emojiPop = document.createElement('div');
+  emojiPop.className = 'emojipop';
+  emojiPop.style.left = Math.max(8, Math.min(r.left, innerWidth - 304)) + 'px';
+  emojiPop.style.top = (r.bottom + 6) + 'px';
+  for(const em of EMOJIS){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = em;
+    b.setAttribute('aria-label', 'Chèn ' + em);
+    b.onclick = () => { closeEmoji(); src.focus(); insert(em + ' '); };
+    emojiPop.appendChild(b);
+  }
+  document.body.appendChild(emojiPop);
+};
+document.addEventListener('pointerdown', e => { if(emojiPop && !emojiPop.contains(e.target) && e.target.id !== 'btnEmoji') closeEmoji(); });
+$('#btnLink').onclick = () => {
+  const s = src.selectionStart, en = src.selectionEnd, sel = src.value.slice(s, en).trim();
+  const url = (prompt('Dán đường link (bắt đầu bằng https://)') || '').trim();
+  if(!/^https?:\/\//i.test(url)){ if(url) toast('Link cần bắt đầu bằng http:// hoặc https://'); return; }
+  src.focus(); src.setSelectionRange(s, en);
+  insert('[' + (sel || 'Xem thêm') + '](' + url + ')');
+};
+$('#btnImg').onclick = () => {
+  const s = src.selectionStart, en = src.selectionEnd;
+  const url = (prompt('Dán địa chỉ ảnh (https://… .png / .jpg)') || '').trim();
+  if(!/^https?:\/\//i.test(url)){ if(url) toast('Địa chỉ ảnh cần bắt đầu bằng http:// hoặc https://'); return; }
+  src.focus(); src.setSelectionRange(s, en);
+  insert('![](' + url + ')');
+};
+
 /* ---------- thông báo nhỏ ---------- */
 let toastEl = null, toastTimer = 0;
 function toast(msg, actLabel, act){
@@ -1330,10 +1621,10 @@ function refreshPreview(){
   mImg.src = lastCanvas.toDataURL('image/png');
   $('#mInfo').textContent = 'Kích thước ảnh: ' + lastCanvas.width + ' × ' + lastCanvas.height + ' px';
 }
-function fileName(){
+function fileName(ext){
   const slug = (root ? root.text : 'so-do').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
-  return 'so-do-' + (slug || 'tu-duy') + '.png';
+  return 'so-do-' + (slug || 'tu-duy') + '.' + (ext || 'png');
 }
 let dl = null, standalone = false;
 try{ standalone = window.top === window.self; }catch(e){ standalone = false; }
@@ -1376,33 +1667,148 @@ $('#mCopy').onclick = async () => {
     toast('Trình duyệt chưa cho sao chép ảnh. Hãy nhấn chuột phải vào ảnh để lưu.');
   }
 };
+function saveBlob(blob, name){
+  if(dl){
+    dl.save({filename:name, data:blob}).then(
+      () => toast('Đã lưu ' + name),
+      err => {
+        const code = err && err.code;
+        if(code === 'declined') toast('Đã hủy, file chưa được lưu');
+        else if(code === 'rate_limited') toast('Đang có hộp thoại lưu mở sẵn, hãy thử lại sau giây lát');
+        else toast('Không lưu được file này.');
+      });
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast('Đã tạo file ' + name);
+}
 $('#mDownload').onclick = () => {
   if(!lastCanvas) return;
-  const name = fileName();
   lastCanvas.toBlob(blob => {
     if(!blob){ toast('Không tạo được ảnh, hãy thử độ nét thấp hơn'); return; }
-    if(dl){
-      dl.save({filename:name, data:blob}).then(
-        () => toast('Đã lưu ' + name),
-        err => {
-          const code = err && err.code;
-          if(code === 'declined') toast('Đã hủy, ảnh chưa được lưu');
-          else if(code === 'rate_limited') toast('Đang có hộp thoại lưu mở sẵn, hãy thử lại sau giây lát');
-          else toast('Không lưu được file. Hãy nhấn chuột phải vào ảnh để lưu.');
-        });
-      return;
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast('Đã tạo file ' + name);
+    saveBlob(blob, fileName('png'));
   }, 'image/png');
 };
+
+/* ---------- xuất Markdown, OPML, XMind, PDF ---------- */
+const titleOf = n => n.text || n.link || 'Sơ đồ';
+function mdOf(n, d){
+  let out = '';
+  for(const c of n.children){
+    let t = c.link ? '[' + titleOf(c) + '](' + c.link + ')' : c.text;
+    if(c.img) t = (t ? t + ' ' : '') + '![](' + c.img + ')';
+    out += '  '.repeat(d) + '- ' + t + '\n' + mdOf(c, d + 1);
+  }
+  return out;
+}
+function buildMarkdown(){
+  return '# ' + (root.link ? '[' + titleOf(root) + '](' + root.link + ')' : titleOf(root)) + '\n\n' + mdOf(root, 0);
+}
+const xmlEsc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function opmlNode(n, d){
+  const pad = '  '.repeat(d);
+  const attr = ' text="' + xmlEsc(titleOf(n)) + '"' + (n.link ? ' url="' + xmlEsc(n.link) + '"' : '') + (n.img ? ' _note="' + xmlEsc('Ảnh: ' + n.img) + '"' : '');
+  if(!n.children.length) return pad + '<outline' + attr + '/>\n';
+  return pad + '<outline' + attr + '>\n' + n.children.map(c => opmlNode(c, d + 1)).join('') + pad + '</outline>\n';
+}
+function buildOpml(){
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<opml version="2.0">\n  <head><title>' + xmlEsc(titleOf(root)) + '</title></head>\n  <body>\n' + opmlNode(root, 2) + '  </body>\n</opml>\n';
+}
+// Zip không nén (STORE), đủ cho file .xmind
+const CRCT = (() => { const t = new Uint32Array(256); for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; } return t; })();
+function crc32(u8){ let c = 0xFFFFFFFF; for(let i = 0; i < u8.length; i++) c = CRCT[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zipStore(files){
+  const te = new TextEncoder(), parts = [], cd = [];
+  let off = 0;
+  const d = new Date();
+  const dt = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const dd = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for(const f of files){
+    const nm = te.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, dt, true); lh.setUint16(12, dd, true); lh.setUint32(14, crc, true); lh.setUint32(18, sz, true); lh.setUint32(22, sz, true);
+    lh.setUint16(26, nm.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), nm, f.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, dt, true); ch.setUint16(14, dd, true); ch.setUint32(16, crc, true); ch.setUint32(20, sz, true); ch.setUint32(24, sz, true);
+    ch.setUint16(28, nm.length, true); ch.setUint32(42, off, true);
+    cd.push(new Uint8Array(ch.buffer), nm);
+    off += 30 + nm.length + sz;
+  }
+  let cdSize = 0;
+  for(const p of cd) cdSize += p.length;
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...cd, new Uint8Array(end.buffer)], {type:'application/zip'});
+}
+function buildXmind(){
+  const te = new TextEncoder();
+  let k = 0;
+  const id = () => 'n' + (++k).toString(36) + Math.random().toString(36).slice(2, 10);
+  const topic = n => {
+    const t = {id:id(), class:'topic', title:titleOf(n)};
+    if(n.link) t.href = n.link;
+    if(n.children.length) t.children = {attached:n.children.map(topic)};
+    return t;
+  };
+  const content = [{id:id(), class:'sheet', title:'Sơ đồ', rootTopic:topic(root)}];
+  const meta = {creator:{name:'Cây Ý Tưởng'}};
+  const manifest = {'file-entries':{'content.json':{}, 'metadata.json':{}}};
+  return zipStore([
+    {name:'content.json', data:te.encode(JSON.stringify(content))},
+    {name:'metadata.json', data:te.encode(JSON.stringify(meta))},
+    {name:'manifest.json', data:te.encode(JSON.stringify(manifest))}
+  ]);
+}
+// PDF: một trang vừa khít sơ đồ, ảnh JPEG độ nét 3× (không cần thư viện ngoài)
+async function buildPdf(){
+  const keep = expScale;
+  expScale = 3;
+  const c = exportCanvas(false);
+  expScale = keep;
+  const jpg = new Uint8Array(await (await new Promise(r => c.toBlob(r, 'image/jpeg', 0.92))).arrayBuffer());
+  const pw = (c.width * 0.25).toFixed(2), ph = (c.height * 0.25).toFixed(2);   // 3× ảnh = 96 dpi → pt
+  const te = new TextEncoder(), chunks = [], offs = [];
+  let len = 0;
+  const push = x => { const u = typeof x === 'string' ? te.encode(x) : x; chunks.push(u); len += u.length; };
+  const obj = (nth, body) => { offs[nth] = len; push(nth + ' 0 obj\n' + body + '\nendobj\n'); };
+  push('%PDF-1.4\n%âãÏÓ\n');
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + pw + ' ' + ph + '] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+  offs[4] = len;
+  push('4 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + c.width + ' /Height ' + c.height +
+    ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpg.length + ' >>\nstream\n');
+  push(jpg);
+  push('\nendstream\nendobj\n');
+  const cs = 'q ' + pw + ' 0 0 ' + ph + ' 0 0 cm /Im0 Do Q';
+  obj(5, '<< /Length ' + cs.length + ' >>\nstream\n' + cs + '\nendstream');
+  const xref = len;
+  let x = 'xref\n0 6\n0000000000 65535 f \n';
+  for(let i = 1; i <= 5; i++) x += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
+  push(x + 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n');
+  return new Blob(chunks, {type:'application/pdf'});
+}
+$('#mFormats').addEventListener('click', async e => {
+  const b = e.target.closest('button');
+  if(!b || !root) return;
+  try{
+    if(b.dataset.fmt === 'pdf') saveBlob(await buildPdf(), fileName('pdf'));
+    else if(b.dataset.fmt === 'md') saveBlob(new Blob([buildMarkdown()], {type:'text/markdown;charset=utf-8'}), fileName('md'));
+    else if(b.dataset.fmt === 'opml') saveBlob(new Blob([buildOpml()], {type:'text/x-opml;charset=utf-8'}), fileName('opml'));
+    else if(b.dataset.fmt === 'xmind') saveBlob(buildXmind(), fileName('xmind'));
+  }catch(err){ toast('Không xuất được file này, hãy thử lại'); }
+});
 
 /* ---------- bài đã lưu ---------- */
 const libModal = $('#libModal'), libList = $('#libList');
@@ -1510,6 +1916,7 @@ async function saveCurrent(){
   const old = cur.id ? library.find(x => x.id === cur.id) : null;
   const id = cur.id || newId();
   const entry = Object.assign(settingsNow(), {name:name, text:src.value, created:old && old.created ? old.created : now, updated:now});
+  if(old && old.shareId) entry.shareId = old.shareId;   // giữ link chia sẻ khi lưu lại
   const prevCur = cur;
   cur = {id:id, name:name};
   nameInp.value = name;
@@ -1784,6 +2191,99 @@ function initLibrary() {
   });
 }
 
+/* ---------- chia sẻ link chỉ xem (Firestore: collection "shares") ---------- */
+const shModal = $('#shModal');
+function newShareId(){
+  const a = new Uint8Array(8);
+  crypto.getRandomValues(a);
+  return Array.from(a, b => (b % 36).toString(36)).join('');
+}
+const shareUrl = id => location.origin + location.pathname + '?v=' + id;
+function curEntry(){ return cur.id ? library.find(x => x.id === cur.id) : null; }
+async function publishShare(){
+  const e = curEntry();
+  const id = (e && e.shareId) || newShareId();
+  const data = Object.assign(settingsNow(), {
+    name:(nameInp.value.trim() || (root ? root.text : 'Sơ đồ')).slice(0, 80),
+    text:src.value, owner:auth.currentUser.uid, updated:Date.now()
+  });
+  await db.collection('shares').doc(id).set(data);
+  if(!(e && e.shareId)) await libCol.doc(cur.id).set({shareId:id}, {merge:true});
+  return id;
+}
+function showShare(id){
+  $('#shUrl').value = shareUrl(id);
+  shModal.hidden = false;
+  $('#shUrl').select();
+}
+$('#btnShare').onclick = async () => {
+  if(!root){ toast('Chưa có sơ đồ để chia sẻ'); return; }
+  if(!auth.currentUser){ toast('Hãy đăng nhập Google để tạo link chia sẻ'); return; }
+  const e = curEntry();
+  if(!e || libSource !== 'cloud'){ toast('Hãy bấm Lưu bài trước, rồi mới chia sẻ'); return; }
+  try{
+    if(e.shareId){ showShare(e.shareId); return; }
+    showShare(await publishShare());
+  }catch(err){ console.error(err); toast('Không tạo được link chia sẻ (kiểm tra luật Firestore)'); }
+};
+$('#shUpdate').onclick = async () => {
+  try{ await publishShare(); toast('Đã cập nhật nội dung của link'); }
+  catch(err){ console.error(err); toast('Không cập nhật được'); }
+};
+$('#shStop').onclick = async () => {
+  const e = curEntry();
+  if(!e || !e.shareId) return;
+  try{
+    await db.collection('shares').doc(e.shareId).delete();
+    await libCol.doc(cur.id).update({shareId:firebase.firestore.FieldValue.delete()});
+    shModal.hidden = true;
+    toast('Đã dừng chia sẻ, link cũ không còn xem được');
+  }catch(err){ console.error(err); toast('Không dừng được chia sẻ'); }
+};
+$('#shCopy').onclick = async () => {
+  const u = $('#shUrl').value;
+  try{ await navigator.clipboard.writeText(u); toast('Đã sao chép link'); }
+  catch(e){ $('#shUrl').select(); toast(document.execCommand('copy') ? 'Đã sao chép link' : 'Hãy chọn link và sao chép thủ công'); }
+};
+$('#shClose').onclick = () => { shModal.hidden = true; };
+shModal.addEventListener('click', e => { if(e.target === shModal) shModal.hidden = true; });
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && !shModal.hidden) shModal.hidden = true; });
+
+// Người nhận mở ?v=ID: chỉ đọc, không động tới bài đang soạn của họ
+async function loadShared(id){
+  const bar = document.createElement('div');
+  bar.className = 'viewbanner';
+  bar.textContent = 'Đang tải sơ đồ được chia sẻ…';
+  $('.app').prepend(bar);
+  try{
+    const snap = await db.collection('shares').doc(id).get();
+    if(!snap.exists) throw new Error('missing');
+    const d = snap.data();
+    applySettings(d);
+    nameInp.value = d.name || '';
+    src.value = String(d.text || '');
+    src.readOnly = true;
+    userMoved = false;
+    rebuild();
+    bar.textContent = '';
+    const label = document.createElement('span');
+    label.textContent = (d.name ? '«' + d.name + '» · ' : '') + 'Đang xem ở chế độ chỉ xem';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Chép về để chỉnh sửa';
+    btn.onclick = () => {
+      if(!confirm('Mở bản sao này trong trình soạn? Dàn ý đang soạn dở trên máy này (nếu có) sẽ bị thay thế.')) return;
+      store[skin] = {pal:palIdx, bg:bgMode};
+      try{ localStorage.setItem(KEY, JSON.stringify({text:src.value, mode:mode, skin:skin, style:nodeStyle, deco:deco, store:store, name:nameInp.value, cur:{id:null, name:''}})); }catch(e){}
+      location.href = location.pathname;
+    };
+    bar.append(label, btn);
+  }catch(err){
+    console.error(err);
+    bar.textContent = 'Link chia sẻ không tồn tại hoặc chủ sở hữu đã dừng chia sẻ.';
+  }
+}
+
 /* ---------- kéo chỉnh độ rộng dàn ý ---------- */
 const splitter = $('#splitter');
 const workEl = $('.work');
@@ -1846,7 +2346,7 @@ document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click
 }));
 
 /* ---------- khởi động ---------- */
-const saved = loadSaved();
+const saved = viewOnly ? null : loadSaved();
 if(saved && typeof saved.text === 'string' && saved.text.trim()){
   src.value = saved.text;
   if(['both', 'right', 'down'].includes(saved.mode)) mode = saved.mode;
@@ -1862,14 +2362,14 @@ if(saved && typeof saved.text === 'string' && saved.text.trim()){
     }
   }
 } else {
-  src.value = SAMPLE;
+  src.value = viewOnly ? '' : SAMPLE;
 }
 palIdx = store[skin].pal;
 bgMode = store[skin].bg;
 applySkin();
 if(saved && typeof saved.name === 'string') nameInp.value = saved.name;
 if(saved && saved.cur && typeof saved.cur.id === 'string') cur = {id:saved.cur.id, name:String(saved.cur.name || '')};
-initLibrary();
+if(viewOnly) loadShared(viewId); else initLibrary();
 new ResizeObserver(resize).observe(wrap);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
 new MutationObserver(draw).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
