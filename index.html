@@ -243,6 +243,11 @@ button{cursor:pointer}
 .viewbanner button{border:1px solid currentColor;background:transparent;color:inherit;border-radius:9px;padding:4px 12px;font-weight:600;font-size:12.5px}
 .viewonly #paneEdit,.viewonly #splitter,.viewonly .tabs,.viewonly #authBox,.viewonly #btnShare,.viewonly .skin{display:none!important}
 .viewonly #paneMap{display:flex!important}
+.pals .palplus{padding:6px 10px;font-weight:700;color:var(--muted);border-style:dashed}
+.pals .palplus:hover{color:var(--ink);border-color:var(--accent)}
+.pe-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.pe-c{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--muted)}
+.pe-c input[type=color]{width:100%;height:40px;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--panel2);cursor:pointer}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -444,6 +449,35 @@ button{cursor:pointer}
   </div>
 </div>
 
+<div class="modal" id="palModal" hidden role="dialog" aria-modal="true" aria-labelledby="pTitle">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="pTitle">Tự phối màu</h2>
+      <button type="button" class="ghost" id="pClose">Đóng</button>
+    </div>
+    <input class="nameinp" id="pName" maxlength="30" placeholder="Tên bảng màu" aria-label="Tên bảng màu">
+    <div class="sheet-opts">
+      <div class="grp"><span class="lbl">Màu gốc</span>
+        <input type="color" id="pBase" value="#6d3ff0" aria-label="Màu gốc" style="width:44px;height:34px;padding:0;border:1px solid var(--line);border-radius:8px;background:none">
+      </div>
+      <div class="xbtns">
+        <button type="button" data-gen="spread">Rải đều</button>
+        <button type="button" data-gen="mono">Cùng tông</button>
+        <button type="button" data-gen="rand">Ngẫu nhiên</button>
+      </div>
+    </div>
+    <p class="note">Màu 8 nhánh chính (nhánh thứ 9 trở đi sẽ lặp lại từ màu đầu)</p>
+    <div class="pe-grid" id="pBranch"></div>
+    <p class="note">Màu chủ đề gốc, dạng gradient (chỉ hiện ở kiểu "Nhiều màu")</p>
+    <div class="pe-grid" id="pRoot"></div>
+    <div class="sheet-foot">
+      <button type="button" class="ghost danger" id="pDel" hidden>Xóa bảng này</button>
+      <button type="button" class="ghost" id="pCancel">Hủy</button>
+      <button type="button" class="primary" id="pSave">Lưu bảng màu</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
 'use strict';
@@ -503,6 +537,19 @@ const PAL = {
 };
 const BG_OPTS = {basic:['dots', 'grid', 'plain'], color:['flora', 'grid', 'dots', 'plain']};
 const SKINS = ['basic', 'color'];
+const PAL0 = {basic:PAL.basic.slice(), color:PAL.color.slice()};   // bảng màu gốc
+const CKEY = 'cay-y-tuong-custom-pal';
+const HEXOK = /^#[0-9a-f]{6}$/i;
+let customPals = [];
+try{
+  customPals = JSON.parse(localStorage.getItem(CKEY) || '[]').filter(p => p && typeof p.name === 'string'
+    && Array.isArray(p.c) && p.c.length === 8 && p.c.every(x => HEXOK.test(x))
+    && Array.isArray(p.root) && p.root.length === 2 && p.root.every(x => HEXOK.test(x)));
+}catch(e){ customPals = []; }
+function syncPals(){
+  for(const s of SKINS) PAL[s] = PAL0[s].concat(customPals.map(p => ({name:p.name, c:p.c, root:p.root, custom:true})));
+}
+syncPals();
 const SUB = {
   basic:'Gõ dàn ý thụt lề, sơ đồ tư duy tự vẽ bên cạnh',
   color:'Gõ dàn ý thụt lề, sơ đồ tư duy tự mọc hoa lá bên cạnh'
@@ -861,7 +908,7 @@ function glow(c, x, y, r, rgb, a){
 }
 let tileCache = null, tileKey = '';
 function getTile(){
-  const key = skin + '|' + palIdx + '|' + (T.dark ? 1 : 0);
+  const key = skin + '|' + palIdx + '|' + (T.dark ? 1 : 0) + '|' + PALETTES[palIdx].c.join('');
   if(tileCache && tileKey === key) return tileCache;
   const S = 360, sc = 2;
   const t = document.createElement('canvas');
@@ -1426,6 +1473,15 @@ function buildPals(){
     for(let j = 0; j < 4; j++){ const d = document.createElement('i'); d.style.background = p.c[j]; b.appendChild(d); }
     palBox.appendChild(b);
   });
+  const add = document.createElement('button');
+  add.type = 'button'; add.className = 'palplus'; add.textContent = '＋';
+  add.title = 'Tự phối màu'; add.setAttribute('aria-label', 'Tự phối bảng màu mới');
+  add.onclick = () => openPalEd(false);
+  const ed = document.createElement('button');
+  ed.type = 'button'; ed.className = 'palplus'; ed.id = 'btnPalEdit'; ed.textContent = '✎';
+  ed.title = 'Sửa bảng màu này'; ed.setAttribute('aria-label', 'Sửa bảng màu đang chọn');
+  ed.onclick = () => openPalEd(true);
+  palBox.append(add, ed);
 }
 function syncControls(){
   document.querySelectorAll('[data-skinopt]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.skinopt === skin)));
@@ -1434,6 +1490,7 @@ function syncControls(){
   document.querySelectorAll('[data-pal]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.pal === palIdx)));
   document.querySelectorAll('[data-bg]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bg === bgMode)));
   $('#btnDeco').setAttribute('aria-pressed', String(deco));
+  const pe = $('#btnPalEdit'); if(pe) pe.hidden = !(PALETTES[palIdx] && PALETTES[palIdx].custom);
 }
 function applySkin(){
   document.documentElement.dataset.skin = skin;
@@ -2345,6 +2402,95 @@ document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click
   requestAnimationFrame(() => { resize(); if(b.dataset.tab === 'edit') src.focus(); });
 }));
 
+/* ---------- tự phối màu ---------- */
+const palModal = $('#palModal'), pBranch = $('#pBranch'), pRoot = $('#pRoot'), pName = $('#pName');
+let palEd = null; const branchInps = [], rootInps = [];
+function hsl2hex(h, s, l){
+  h = ((h % 360) + 360) % 360; s = Math.max(0, Math.min(100, s)) / 100; l = Math.max(0, Math.min(100, l)) / 100;
+  const a = s * Math.min(l, 1 - l), f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+  return rgb2hex(f(0) * 255, f(8) * 255, f(4) * 255);
+}
+function hex2hsl(hx){
+  const [r, g, b] = hex2rgb(hx).map(v => v / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  let h = 0, s = 0;
+  if(d){ s = d / (1 - Math.abs(2 * l - 1)); h = mx === r ? ((g - b) / d) % 6 : (mx === g ? (b - r) / d + 2 : (r - g) / d + 4); h *= 60; }
+  return [(h + 360) % 360, s * 100, l * 100];
+}
+const draft = () => customPals[palEd.i];
+function refreshPals(){ syncPals(); PALETTES = PAL[skin]; buildPals(); syncControls(); }
+function applyDraft(){ refreshPals(); palIdx = PAL0[skin].length + palEd.i; syncControls(); draw(); }
+function fillInputs(){
+  const d = draft(); pName.value = d.name;
+  branchInps.forEach((x, i) => x.value = d.c[i]);
+  rootInps.forEach((x, i) => x.value = d.root[i]);
+}
+function buildPalEd(){
+  if(branchInps.length) return;
+  const mk = (box, i, key, lab) => {
+    const w = document.createElement('label'); w.className = 'pe-c';
+    const x = document.createElement('input'); x.type = 'color'; x.setAttribute('aria-label', lab);
+    x.oninput = () => { draft()[key][i] = x.value; applyDraft(); };
+    const s = document.createElement('span'); s.textContent = lab;
+    w.append(x, s); box.appendChild(w); return x;
+  };
+  for(let i = 0; i < 8; i++) branchInps.push(mk(pBranch, i, 'c', 'Nhánh ' + (i + 1)));
+  ['Gốc (đầu)', 'Gốc (cuối)'].forEach((t, i) => rootInps.push(mk(pRoot, i, 'root', t)));
+}
+function openPalEd(edit){
+  buildPalEd();
+  const cp = PALETTES[palIdx];
+  if(edit && cp.custom){
+    const i = palIdx - PAL0[skin].length;
+    palEd = {i:i, isNew:false, backup:JSON.parse(JSON.stringify(customPals[i]))};
+  } else {
+    customPals.push({name:'Bảng màu của tôi', c:cp.c.slice(), root:(cp.root || [mix(cp.c[0], '#000000', 0.35), cp.c[0]]).slice()});
+    palEd = {i:customPals.length - 1, isNew:true, prevPal:palIdx};
+  }
+  $('#pBase').value = draft().c[0];
+  $('#pDel').hidden = palEd.isNew;
+  fillInputs(); applyDraft();
+  palModal.hidden = false; pName.focus();
+}
+function persistCustom(){ try{ localStorage.setItem(CKEY, JSON.stringify(customPals)); return true; }catch(e){ return false; } }
+function endPalEd(commit){
+  if(!palEd) return;
+  const e = palEd; palEd = null; palModal.hidden = true;
+  if(commit){
+    customPals[e.i].name = pName.value.trim().slice(0, 30) || 'Bảng màu của tôi';
+    toast(persistCustom() ? 'Đã lưu bảng màu' : 'Trình duyệt không cho lưu, bảng màu chỉ dùng trong lần này');
+  } else if(e.isNew){ customPals.pop(); palIdx = e.prevPal; }
+  else customPals[e.i] = e.backup;
+  refreshPals(); save(); rebuild();
+}
+function genPal(kind){
+  let [h, s, l] = hex2hsl($('#pBase').value);
+  s = Math.max(s, 55); l = Math.min(Math.max(l, 42), 58);
+  if(kind === 'rand') h = Math.random() * 360;
+  const d = draft();
+  for(let i = 0; i < 8; i++){
+    d.c[i] = kind === 'mono' ? hsl2hex(h + (i - 4) * 5, s, 30 + i * 4.6)
+           : kind === 'rand' ? hsl2hex(h + i * 137.5, 62 + Math.random() * 16, 48 + Math.random() * 10)
+           : hsl2hex(h + i * 45, s, l);
+  }
+  d.root = [hsl2hex(h - 25, s, l - 14), hsl2hex(h, s, l)];
+  fillInputs(); applyDraft();
+}
+pName.addEventListener('input', () => { if(palEd) draft().name = pName.value; });
+$('.xbtns [data-gen]') && document.querySelectorAll('[data-gen]').forEach(b => b.addEventListener('click', () => { if(palEd) genPal(b.dataset.gen); }));
+$('#pSave').onclick = () => endPalEd(true);
+$('#pCancel').onclick = $('#pClose').onclick = () => endPalEd(false);
+palModal.addEventListener('click', e => { if(e.target === palModal) endPalEd(false); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && palEd) endPalEd(false); });
+$('#pDel').onclick = () => {
+  if(!palEd) return;
+  const e = palEd; palEd = null; palModal.hidden = true;
+  customPals.splice(e.i, 1); persistCustom();
+  refreshPals();
+  palIdx = 0;
+  for(const s of SKINS) if(store[s].pal >= PAL[s].length) store[s].pal = 0;
+  syncControls(); save(); rebuild(); toast('Đã xóa bảng màu');
+};
 /* ---------- khởi động ---------- */
 const saved = viewOnly ? null : loadSaved();
 if(saved && typeof saved.text === 'string' && saved.text.trim()){
