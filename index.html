@@ -249,6 +249,9 @@ button{cursor:pointer}
 .pe-c{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--muted)}
 .pe-c input[type=color]{width:100%;height:40px;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--panel2);cursor:pointer}
 .seg[aria-label="Bố cục"]{flex-wrap:wrap}
+@media (min-width:761px){ .work.hide-edit #paneEdit, .work.hide-edit #splitter{display:none!important} }
+@media (max-width:760px){ #btnPane{display:none} }
+.viewonly #btnPane, .viewonly #grpClick{display:none!important}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -342,6 +345,13 @@ button{cursor:pointer}
    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Kéo để chỉnh độ rộng"></div>
     <section class="panel" id="paneMap" aria-label="Sơ đồ">
       <div class="bar">
+   <button type="button" class="ghost" id="btnPane" title="Ẩn/hiện khung dàn ý">⇤ Ẩn dàn ý</button>
+<div class="grp" id="grpClick"><span class="lbl">Bấm nút</span>
+  <div class="seg" role="group" aria-label="Khi bấm vào nút trên sơ đồ">
+    <button type="button" data-click="edit" aria-pressed="true">Sửa dàn ý</button>
+    <button type="button" data-click="fold" aria-pressed="false">Thu gọn</button>
+  </div>
+</div>
         <div class="grp"><span class="lbl">Bố cục</span>
           <div class="seg" role="group" aria-label="Bố cục">
   <button type="button" data-layout="both" aria-pressed="true">Hai bên</button>
@@ -376,7 +386,7 @@ button{cursor:pointer}
       </div>
       <div class="canvaswrap" id="wrap">
         <canvas id="cv" role="img" aria-label="Sơ đồ tư duy được vẽ từ dàn ý"></canvas>
-        <p class="tip">Kéo nền để di chuyển · Kéo một nút để đổi vị trí · Cuộn để thu phóng · Bấm vào nút để thu gọn hoặc mở nhánh</p>
+        <p class="tip">Kéo nền để di chuyển · Kéo một nút để đổi vị trí · Cuộn để thu phóng · Bấm vào nút để nhảy tới dòng dàn ý · Bấm đúp để thu gọn nhánh</p>
         <div class="zoom">
           <button type="button" id="zin" aria-label="Phóng to">+</button>
           <button type="button" id="zout" aria-label="Thu nhỏ">−</button>
@@ -1451,7 +1461,7 @@ cv.addEventListener('pointermove', e => {
     if(e.pointerType === 'mouse'){
       const h = hit(p.x, p.y);
       if(h !== hover){ hover = h; draw(); }
-      cv.style.cursor = (hitLink(p.x, p.y) || (h && h.children.length)) ? 'pointer' : 'grab';
+      cv.style.cursor = (hitLink(p.x, p.y) || h) ? 'pointer' : 'grab';
     }
     return;
   }
@@ -1506,7 +1516,7 @@ function endPtr(e){
     if(pan && moved <= 4 && e.type === 'pointerup'){
       const lk = hitLink(p.x, p.y);
       if(lk){ window.open(lk.link, '_blank', 'noopener,noreferrer'); }
-      else { const h = hit(p.x, p.y); if(h && h.children.length) toggle(h); }
+      else { const h = hit(p.x, p.y); if(h) clickNode(h, p.x, p.y); }
     }
     pan = null; lastPinch = null;
     cv.style.cursor = 'grab';
@@ -2561,6 +2571,58 @@ $('#pDel').onclick = () => {
   for(const s of SKINS) if(store[s].pal >= PAL[s].length) store[s].pal = 0;
   syncControls(); save(); rebuild(); toast('Đã xóa bảng màu');
 };
+/* ---------- bấm nút trên sơ đồ để nhảy tới dòng dàn ý, ẩn/hiện khung dàn ý ---------- */
+const UIKEY = 'cay-y-tuong-ui';
+let clickMode = 'edit', paneHidden = false;
+try{
+  const u = JSON.parse(localStorage.getItem(UIKEY) || '{}');
+  if(u.click === 'fold') clickMode = 'fold';
+  paneHidden = !!u.hide;
+}catch(e){}
+function saveUi(){ try{ localStorage.setItem(UIKEY, JSON.stringify({click:clickMode, hide:paneHidden})); }catch(e){} }
+function syncPane(){
+  workEl.classList.toggle('hide-edit', paneHidden);
+  $('#btnPane').textContent = paneHidden ? '⇥ Hiện dàn ý' : '⇤ Ẩn dàn ý';
+  document.querySelectorAll('[data-click]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.click === clickMode)));
+}
+$('#btnPane').onclick = () => { paneHidden = !paneHidden; syncPane(); saveUi(); };
+document.querySelectorAll('[data-click]').forEach(b => b.onclick = () => { clickMode = b.dataset.click; syncPane(); saveUi(); });
+syncPane();
+
+function jumpTo(n){
+  const go = () => {
+    const lines = src.value.split('\n');
+    if(n.li >= lines.length) return;
+    let start = 0;
+    for(let i = 0; i < n.li; i++) start += lines[i].length + 1;
+    const line = lines[n.li];
+    const lead = line.match(/^[ \t]*/)[0].length;
+    src.focus({preventScroll:true});
+    src.setSelectionRange(start + lead, start + line.length);   // bôi đen chữ của dòng
+    const LH = 24, PAD = 14;                                    // khớp với CSS của #src
+    src.scrollTop = Math.max(0, n.li * LH + PAD - (src.clientHeight - LH) / 2);
+    src.scrollLeft = 0;
+  };
+  if(matchMedia('(max-width:760px)').matches && work.dataset.tab !== 'edit'){
+    work.dataset.tab = 'edit';
+    document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.tab === 'edit')));
+    requestAnimationFrame(() => { resize(); go(); });
+  } else {
+    if(paneHidden){ paneHidden = false; syncPane(); saveUi(); }
+    go();
+  }
+}
+function clickNode(n, px, py){
+  const x = (px - view.x) / view.k, y = (py - view.y) / view.k, b = n.bd;
+  const onBadge = b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+  if(viewOnly || onBadge || clickMode === 'fold'){ if(n.children.length) toggle(n); return; }
+  jumpTo(n);
+}
+cv.addEventListener('dblclick', e => {
+  if(viewOnly || clickMode !== 'edit') return;
+  const p = pos(e), h = hit(p.x, p.y);
+  if(h && h.children.length) toggle(h);
+});
 /* ---------- khởi động ---------- */
 const saved = viewOnly ? null : loadSaved();
 if(saved && typeof saved.text === 'string' && saved.text.trim()){
